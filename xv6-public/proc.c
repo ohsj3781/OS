@@ -7,6 +7,7 @@
 #include "proc.h"
 #include "spinlock.h"
 
+// written by SeungJaeOh
 int procnicetoweight[MAXNICE - MINNICE + 1] =
     {/* 0*/ 88761, 71755, 56483, 46273, 36291,
      /* 5*/ 29154, 23254, 18705, 14949, 11916,
@@ -16,6 +17,18 @@ int procnicetoweight[MAXNICE - MINNICE + 1] =
      /*25*/ 335, 272, 215, 172, 137,
      /*30*/ 110, 87, 70, 56, 45,
      /*35*/ 36, 29, 23, 18, 15};
+
+struct mmap_area
+{
+  struct file *f;
+  uint addr;
+  int length;
+  int offset;
+  int prot;
+  int flags;
+  struct proc *p;
+  /* data */
+};
 
 struct
 {
@@ -738,16 +751,25 @@ void ps(int pid)
   }
 }
 
-// written by SeungJaeOh PA03
-
+// If succeed, return the start address of mapping area, If failed, return 0
 uint mmap(uint addr, int length, int prot, int flags, int fd, int offset)
 {
+  if (addr % PGSIZE != 0)
+  {
+    return 0;
+  }
+  // const uint start_addr = MMAPBASE + addr;
+  // const uint end_addr = MMAPBASE + addr + length;
+
+  return 100;
 }
 
 int munmap(uint addr)
 {
+  return 1;
 }
 
 int freemem()
 {
+  return 1;
 }

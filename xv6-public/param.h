@@ -11,4 +11,6 @@
 #define LOGSIZE      (MAXOPBLOCKS*3)  // max data blocks in on-disk log
 #define NBUF         (MAXOPBLOCKS*3)  // size of disk block cache
 #define FSSIZE       1000  // size of file system in blocks
+#define NMMAPAREA    64    // maximum number of mmap areas array, written by SeungJaeOh
+#define MMAPBASE     0x40000000 // base address of mmap area, written by SeungJaeOh
 
