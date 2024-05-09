@@ -123,6 +123,9 @@ void            yield(void);
 int             getnice(int); //written by SeungJaeOh
 int             setnice(int,int); //written by SeungJaeOh
 void            ps(int); //written by SeungJaeOh
+uint            mmap(uint, int,int,int,int,int); //written by SeungJaeOh
+int             munmap(uint); //written by SeungJaeOh
+int             freemem(); //written by SeungJaeOh
 
 // swtch.S
 void            swtch(struct context**, struct context*);

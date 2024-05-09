@@ -23,3 +23,6 @@
 #define SYS_getnice 22 //written by SeungJaeOh
 #define SYS_setnice 23 //written by SeungJaeOh
 #define SYS_ps 24 //written by SeungJaeOh
+#define SYS_mmap 25 //written by SeungJaeOh
+#define SYS_munmap 26 //written by SeungJaeOh
+#define SYS_freemem 27 //written by SeungJaeOh

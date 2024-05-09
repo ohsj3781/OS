@@ -419,7 +419,6 @@ void scheduler(void)
       }
       // calc virtual runtime of process in this SCHEDILINGLATENCY
 
-
       if (min_vruntime_proc == 0 || p->vruntime < min_vruntime)
       {
         min_vruntime_proc = p;
@@ -439,7 +438,7 @@ void scheduler(void)
     // if proc runtime in this Scheduling latency is bigger than timeslice, then it is not runnable
     if (min_vruntime_proc->runtime - procruntimearray[min_vruntime_proc - ptable.proc] >= timeslice)
     {
-      //cprintf("proc %d is not runnable\n", min_vruntime_proc->pid);
+      // cprintf("proc %d is not runnable\n", min_vruntime_proc->pid);
       release(&ptable.lock);
       continue;
     }
@@ -737,4 +736,18 @@ void ps(int pid)
       break;
     }
   }
+}
+
+// written by SeungJaeOh PA03
+
+uint mmap(uint addr, int length, int prot, int flags, int fd, int offset)
+{
+}
+
+int munmap(uint addr)
+{
+}
+
+int freemem()
+{
 }

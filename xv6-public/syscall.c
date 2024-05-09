@@ -106,6 +106,9 @@ extern int sys_uptime(void);
 extern int sys_getnice(void); //written by SeungJaeOh
 extern int sys_setnice(void); //written by SeungJaeOh
 extern int sys_ps(void); //written by SeungJaeOh
+extern int sys_mmap(void); //written by SeungJaeOh
+extern int sys_munmap(void); //written by SeungJaeOh
+extern int sys_freemem(void); //written by SeungJaeOh
 
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
@@ -132,6 +135,9 @@ static int (*syscalls[])(void) = {
 [SYS_getnice] sys_getnice, //written by SeungJaeOh
 [SYS_setnice] sys_setnice, //written by SeungJaeOh
 [SYS_ps] sys_ps, //written by SeungJaeOh
+[SYS_mmap] sys_mmap, //written by SeungJaeOh
+[SYS_munmap] sys_munmap, //written by SeungJaeOh
+[SYS_freemem] sys_freemem //written by SeungJaeOh
 };
 
 void
