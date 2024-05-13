@@ -13,4 +13,7 @@
 #define FSSIZE       1000  // size of file system in blocks
 #define NMMAPAREA    64    // maximum number of mmap areas array, written by SeungJaeOh
 #define MMAPBASE     0x40000000 // base address of mmap area, written by SeungJaeOh
-
+#define PROT_READ    0x1
+#define PROT_WRITE   0x2
+#define MAP_ANONUMOUS 0x1
+#define MAP_POPULATE 0x2

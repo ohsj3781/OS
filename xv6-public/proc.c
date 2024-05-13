@@ -752,15 +752,23 @@ void ps(int pid)
 }
 
 // If succeed, return the start address of mapping area, If failed, return 0
+// If MAP_ANONYMOUS is given, it is anonyous mapping
+// If MAP_ANONYMOUS is not given, it is file mapping
+// If MAP_POPULATE is given, allocate physical page & make page table for whole mapping area.
+// If MAP_POPULATE is not given, just record its mapping area.
 uint mmap(uint addr, int length, int prot, int flags, int fd, int offset)
 {
   if (addr % PGSIZE != 0)
   {
     return 0;
   }
+
+  struct proc* curproc = myproc();
   // const uint start_addr = MMAPBASE + addr;
   // const uint end_addr = MMAPBASE + addr + length;
 
+
+  //Describe failed situation
   return 100;
 }
 
