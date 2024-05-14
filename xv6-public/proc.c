@@ -30,6 +30,8 @@ struct mmap_area
   /* data */
 };
 
+struct mmap_area mmap_area_array[NMMAPAREA];
+
 struct
 {
   struct spinlock lock;
@@ -758,23 +760,102 @@ void ps(int pid)
 // If MAP_POPULATE is not given, just record its mapping area.
 uint mmap(uint addr, int length, int prot, int flags, int fd, int offset)
 {
-  if (addr % PGSIZE != 0)
+  if (addr % PGSIZE != 0 || length <= 0 || length % PGSIZE != 0)
   {
     return 0;
   }
+  struct proc *curproc = myproc();
 
-  struct proc* curproc = myproc();
-  // const uint start_addr = MMAPBASE + addr;
-  // const uint end_addr = MMAPBASE + addr + length;
+  // Describe failed situation
+  // It's not anonumous, but when the fd is -1
+  // The protection of the file and the prot of the parameter are different
 
+  // if flags have MAP_POPULATE, allocate physical page & make page table for whole mapping area.
+  if (flags && MAP_POPULATE)
+  {
+    char *mem;
+    for (int i = addr + MMAPBASE; i < addr + length + MMAPBASE; i += PGSIZE)
+    {
+      mem = kalloc();
+      // if failed to allocate physical page, return 0
+      // 일단 고려하지 않는다.
+      if (mem == 0)
+      {
+        goto bad;
+      }
+      if (flags && MAP_ANONUMOUS)
+      {
+        memset(mem, 0, PGSIZE);
+      }
+      else
+      {
+        // struct file *f;
+        // if((f=curproc->ofile[fd])==0){
+        //   goto bad;
+        // }
+        // if(f->type!=FD_INODE){
+        //   goto bad;
+        // }
+        // struct inode *ip=f->ip;
+        // ilock(ip);
+        // if(ip->type!=T_FILE){
+        //   iunlock(ip);
+        //   goto bad;
+        // }
+        // if(offset>ip->size){
+        //   iunlock(ip);
+        //   goto bad;
+        // }
+        // if(offset+PGSIZE>ip->size){
+        //   goto bad;
+        // }
+        // readi(ip, mem, offset, PGSIZE);
+        // iunlock(ip);
+      }
+      mappages(curproc->pgdir, (void *)i, PGSIZE, V2P(mem), PTE_W | PTE_U);
+    }
+  }
+  // if flags haven't MAP_POPULATE, just allocate virtual memory
+  else
+  {
+    for (int i = addr; i < addr + length; i += PGSIZE)
+    {
+    }
+  }
 
-  //Describe failed situation
-  return 100;
+  //store mmap_area information into mmap_area_array
+  for(int i=0;i<NMMAPAREA;++i){
+    if(mmap_area_array[i].p==0){
+      mmap_area_array[i].addr=addr;
+      mmap_area_array[i].length=length;
+      mmap_area_array[i].prot=prot;
+      mmap_area_array[i].flags=flags;
+      mmap_area_array[i].offset=offset;
+      mmap_area_array[i].f=curproc->ofile[fd];
+      mmap_area_array[i].p=curproc;
+      return addr;
+    }
+  }
+
+  return addr;
+
+bad:
+  return 0;
 }
 
 int munmap(uint addr)
 {
-  return 1;
+  struct proc *curproc = myproc();
+  for(int i=0;i<NMMAPAREA;++i){
+    if(mmap_area_array[i].p==curproc && mmap_area_array[i].addr==addr){
+      for(int j=MMAPBASE+addr;j<MMAPBASE+addr+mmap_area_array[i].length;j+=PGSIZE){
+       
+      }
+      mmap_area_array[i].p=0;
+      return 1;
+    }
+  }
+  return 0;
 }
 
 int freemem()
