@@ -18,19 +18,19 @@ int procnicetoweight[MAXNICE - MINNICE + 1] =
      /*30*/ 110, 87, 70, 56, 45,
      /*35*/ 36, 29, 23, 18, 15};
 
-struct mmap_area
-{
-  struct file *f;
-  uint addr;
-  int length;
-  int offset;
-  int prot;
-  int flags;
-  struct proc *p;
-  /* data */
-};
-
 struct mmap_area mmap_area_array[NMMAPAREA];
+void init_map_area_array()
+{
+  for (int i = 0; i < NMMAPAREA; i++)
+  {
+    mmap_area_array[i].f = 0;
+    mmap_area_array[i].addr = 0;
+    mmap_area_array[i].length = 0;
+    mmap_area_array[i].prot = 0;
+    mmap_area_array[i].flags = 0;
+    mmap_area_array[i].offset = 0;
+  }
+}
 
 struct
 {
@@ -151,6 +151,7 @@ found:
 //  Set up first user process.
 void userinit(void)
 {
+  void init_map_area_array();
   struct proc *p;
   extern char _binary_initcode_start[], _binary_initcode_size[];
 
@@ -230,6 +231,34 @@ int fork(void)
     np->state = UNUSED;
     return -1;
   }
+  // copy mmap_area information into child process from parent process
+  int copy_mmap_area = 0;
+  for (int i = 0; i < NMMAPAREA && copy_mmap_area == 0; ++i)
+  {
+    if (mmap_area_array[i].p == curproc)
+    {
+      for (int j = 0; j < NMMAPAREA; ++j)
+      {
+        if (j == i)
+        {
+          continue;
+        }
+        if (mmap_area_array[j].p == 0)
+        {
+          mmap_area_array[j].f = mmap_area_array[i].f;
+          mmap_area_array[j].addr = mmap_area_array[i].addr;
+          mmap_area_array[j].length = mmap_area_array[i].length;
+          mmap_area_array[j].offset = mmap_area_array[i].offset;
+          mmap_area_array[j].prot = mmap_area_array[i].prot;
+          mmap_area_array[j].flags = mmap_area_array[i].flags;
+          mmap_area_array[j].p = np;
+          copy_mmap_area = 1;
+          break;
+        }
+      }
+    }
+  }
+
   np->sz = curproc->sz;
   np->parent = curproc;
   *np->tf = *curproc->tf;
@@ -775,6 +804,10 @@ uint mmap(uint addr, int length, int prot, int flags, int fd, int offset)
   }
   // if flags have MAP_POPULATE, allocate physical page & make page table for whole mapping area.
   struct file *f = 0;
+  if ((flags & MAP_ANONYMOUS) == 0)
+  {
+    f = curproc->ofile[fd];
+  }
   if (flags & MAP_POPULATE)
   {
     char *mem;
@@ -788,7 +821,7 @@ uint mmap(uint addr, int length, int prot, int flags, int fd, int offset)
       {
         goto bad;
       }
-      cprintf("mem is %d\n", mem);
+
       // set memory as 0
       if (flags & MAP_ANONYMOUS)
       {
@@ -797,7 +830,6 @@ uint mmap(uint addr, int length, int prot, int flags, int fd, int offset)
       // set memory from fd
       else
       {
-        f = curproc->ofile[fd];
         if (f == 0)
         {
           goto bad;
@@ -828,7 +860,6 @@ uint mmap(uint addr, int length, int prot, int flags, int fd, int offset)
   {
     if (mmap_area_array[i].p == 0)
     {
-      cprintf("store in mmap_area_array\n");
       mmap_area_array[i].f = f;
       mmap_area_array[i].addr = addr + MMAPBASE;
       mmap_area_array[i].length = length;
@@ -854,16 +885,19 @@ int munmap(uint addr)
     {
       pte_t *pte;
       uint pa;
-      if (mmap_area_array[i].flags & MAP_POPULATE)
+
+      for (int j = addr; j < addr + mmap_area_array[i].length; j += PGSIZE)
       {
-        for (int j = addr; j < addr + mmap_area_array[i].length; j += PGSIZE)
+        pte = walkpgdir(curproc->pgdir, (const void *)j, 0);
+        if (pte == 0)
         {
-          pte = walkpgdir(curproc->pgdir, (const void *)j, 0);
-          pa = PTE_ADDR(*pte);
-          char *v = P2V(pa);
-          kfree(v);
+          continue;
         }
+        pa = PTE_ADDR(*pte);
+        char *v = P2V(pa);
+        kfree(v);
       }
+
       mmap_area_array[i].f = 0;
       mmap_area_array[i].addr = 0;
       mmap_area_array[i].length = 0;

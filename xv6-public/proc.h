@@ -58,8 +58,18 @@ struct proc {
   int vruntime;                // written by SeungJaeOh
 };
 
-// written by SeungJaeOh PA02
-
+// written by SeungJaeOh PA03
+struct mmap_area
+{
+  struct file *f;
+  uint addr;
+  int length;
+  int offset;
+  int prot;
+  int flags;
+  struct proc *p;
+  /* data */
+};
 
 // Process memory is laid out contiguously, low addresses first:
 //   text
