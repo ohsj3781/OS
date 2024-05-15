@@ -769,16 +769,16 @@ uint mmap(uint addr, int length, int prot, int flags, int fd, int offset)
   // Describe failed situation
   // It's not anonumous, but when the fd is -1
   // The protection of the file and the prot of the parameter are different
-  if ((flags & MAP_ANONUMOUS) == 0 && fd == -1)
+  if ((flags & MAP_ANONYMOUS) == 0 && fd == -1)
   {
     goto bad;
   }
   // if flags have MAP_POPULATE, allocate physical page & make page table for whole mapping area.
-
+  struct file *f = 0;
   if (flags & MAP_POPULATE)
   {
     char *mem;
-    // char buf[PGSIZE];
+    char buf[PGSIZE];
     for (int i = addr + MMAPBASE; i < addr + length + MMAPBASE; i += PGSIZE)
     {
 
@@ -788,26 +788,38 @@ uint mmap(uint addr, int length, int prot, int flags, int fd, int offset)
       {
         goto bad;
       }
-      if (flags && MAP_ANONUMOUS)
+      cprintf("mem is %d\n", mem);
+      // set memory as 0
+      if (flags & MAP_ANONYMOUS)
       {
         memset(mem, 0, PGSIZE);
       }
+      // set memory from fd
       else
       {
-        // while (offset > 0)
-        // {
-        //   if (offset >= PGSIZE)
-        //   {
-        //     readi(fd, buf, PGSIZE);
-        //   }
-        //   else
-        //   {
-        //     readi(fd, buf, offset);
-        //   }
-        // }
-        // read(fd, buf, PGSIZE);
-        // memmove(mem, buf, PGSIZE);
+        f = curproc->ofile[fd];
+        if (f == 0)
+        {
+          goto bad;
+        }
+        while (offset > 0)
+        {
+          if (offset >= PGSIZE)
+          {
+            fileread(f, buf, PGSIZE);
+            offset -= PGSIZE;
+          }
+          else
+          {
+            fileread(f, buf, offset);
+            offset = 0;
+          }
+        }
+        int n;
+        n = fileread(f, buf, PGSIZE);
+        memmove(mem, buf, n);
       }
+      mappages(curproc->pgdir, (void *)i, PGSIZE, V2P(mem), PTE_W | PTE_U);
     }
   }
 
@@ -816,14 +828,15 @@ uint mmap(uint addr, int length, int prot, int flags, int fd, int offset)
   {
     if (mmap_area_array[i].p == 0)
     {
-      mmap_area_array[i].f = 0;
+      cprintf("store in mmap_area_array\n");
+      mmap_area_array[i].f = f;
       mmap_area_array[i].addr = addr + MMAPBASE;
       mmap_area_array[i].length = length;
       mmap_area_array[i].offset = offset;
       mmap_area_array[i].prot = prot;
       mmap_area_array[i].flags = flags;
       mmap_area_array[i].p = curproc;
-      return addr;
+      return addr + MMAPBASE;
     }
   }
 
@@ -839,11 +852,16 @@ int munmap(uint addr)
   {
     if (mmap_area_array[i].p == curproc && mmap_area_array[i].addr == addr)
     {
+      pte_t *pte;
+      uint pa;
       if (mmap_area_array[i].flags & MAP_POPULATE)
       {
         for (int j = addr; j < addr + mmap_area_array[i].length; j += PGSIZE)
         {
-          kfree((char *)j);
+          pte = walkpgdir(curproc->pgdir, (const void *)j, 0);
+          pa = PTE_ADDR(*pte);
+          char *v = P2V(pa);
+          kfree(v);
         }
       }
       mmap_area_array[i].f = 0;
