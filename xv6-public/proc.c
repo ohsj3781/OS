@@ -778,52 +778,55 @@ uint mmap(uint addr, int length, int prot, int flags, int fd, int offset)
   if (flags & MAP_POPULATE)
   {
     char *mem;
-    char buf[PGSIZE];
+    // char buf[PGSIZE];
     for (int i = addr + MMAPBASE; i < addr + length + MMAPBASE; i += PGSIZE)
     {
 
       // if failed to allocate physical page, return 0
       // 일단 고려하지 않는다.
       if ((mem = kalloc()) == 0)
-        if (flags && MAP_ANONUMOUS)
-        {
-          memset(mem, 0, PGSIZE);
-        }
-        else
-        {
-          while (offset > 0)
-          {
-            if (offset >= PGSIZE)
-            {
-              read(fd, buf, PGSIZE);
-            }
-            else
-            {
-              read(fd, buf, offset);
-            }
-          }
-          read(fd, buf, PGSIZE);
-          memmove(mem, buf, PGSIZE);
-        }
-      mappages(curproc->pgdir, (void *)i, PGSIZE, V2P(mem), PTE_W | PTE_U);
-    }
-
-    // store mmap_area information into mmap_area_array
-    for (int i = 0; i < NMMAPAREA; ++i)
-    {
-      if (mmap_area_array[i].p == 0)
       {
-        mmap_area_array[i].f = 0;
-        mmap_area_array[i].addr = addr + MMAPBASE;
-        mmap_area_array[i].length = length;
-        mmap_area_array[i].offset = offset;
-        mmap_area_array[i].prot = prot;
-        mmap_area_array[i].flags = flags;
-        mmap_area_array[i].p = curproc;
-        return addr;
+        goto bad;
+      }
+      if (flags && MAP_ANONUMOUS)
+      {
+        memset(mem, 0, PGSIZE);
+      }
+      else
+      {
+        // while (offset > 0)
+        // {
+        //   if (offset >= PGSIZE)
+        //   {
+        //     readi(fd, buf, PGSIZE);
+        //   }
+        //   else
+        //   {
+        //     readi(fd, buf, offset);
+        //   }
+        // }
+        // read(fd, buf, PGSIZE);
+        // memmove(mem, buf, PGSIZE);
       }
     }
   }
+
+  // store mmap_area information into mmap_area_array
+  for (int i = 0; i < NMMAPAREA; ++i)
+  {
+    if (mmap_area_array[i].p == 0)
+    {
+      mmap_area_array[i].f = 0;
+      mmap_area_array[i].addr = addr + MMAPBASE;
+      mmap_area_array[i].length = length;
+      mmap_area_array[i].offset = offset;
+      mmap_area_array[i].prot = prot;
+      mmap_area_array[i].flags = flags;
+      mmap_area_array[i].p = curproc;
+      return addr;
+    }
+  }
+
 bad:
   // dealloc memory table
   return 0;
@@ -840,7 +843,7 @@ int munmap(uint addr)
       {
         for (int j = addr; j < addr + mmap_area_array[i].length; j += PGSIZE)
         {
-          freerange(j, j + PGSIZE);
+          kfree((char *)j);
         }
       }
       mmap_area_array[i].f = 0;
@@ -856,14 +859,9 @@ int munmap(uint addr)
   return -1;
 }
 
+extern int free_page_cnt;
+
 int freemem()
 {
-  int cnt = 0;
-  struct run *r = kmem.freelist;
-  while (r != NULL)
-  {
-    ++cnt;
-    r = r->next;
-  }
-  return cnt;
+  return free_page_cnt;
 }

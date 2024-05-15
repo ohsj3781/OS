@@ -114,8 +114,8 @@ sys_ps(void){
 
 int
 sys_mmap(void){
-  uint addr;
-  int length,prot,flags,fd,offset;
+  
+  int addr,length,prot,flags,fd,offset;
   if(argint(0,&addr)<0){
     return -1;
   }
@@ -137,7 +137,7 @@ sys_mmap(void){
 
 int
 sys_munmap(void){
-  uint addr;
+  int addr;
   if(argint(0,&addr)<0){
     return -1;
   }
