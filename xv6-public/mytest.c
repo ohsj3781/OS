@@ -14,7 +14,7 @@
 void with_map_populate(){
 	int size=8192;
 	int fd=open("README",O_RDWR);
-	char* text=mmap(0,size,PROT_READ,MAP_POPULATE,fd,0);
+	char* text=mmap(0,size,PROT_READ,MAP_POPULATE|MAP_ANONUMOUS,fd,0);
 
 	for(int i=0;i<size;i++)
 	{

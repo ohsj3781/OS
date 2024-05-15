@@ -114,7 +114,8 @@ sys_ps(void){
 
 int
 sys_mmap(void){
-  int addr,length,prot,flags,fd,offset;
+  uint addr;
+  int length,prot,flags,fd,offset;
   if(argint(0,&addr)<0){
     return -1;
   }
@@ -127,9 +128,7 @@ sys_mmap(void){
   if(argint(3,&flags)<0){
     return -1;
   }
-  if(argint(4,&fd)<0){
-    return -1;
-  }
+  argint(4,&fd);
   if(argint(5,&offset)<0){
     return -1;
   }
@@ -138,7 +137,7 @@ sys_mmap(void){
 
 int
 sys_munmap(void){
-  int addr;
+  uint addr;
   if(argint(0,&addr)<0){
     return -1;
   }
@@ -147,8 +146,8 @@ sys_munmap(void){
 
 int
 sys_freemem(void){
-  freemem();
-  return 0;
+  
+  return freemem();;
 }
 
 // return how many clock tick interrupts have occurred
