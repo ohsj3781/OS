@@ -13,28 +13,26 @@
 // LRU list for managing physical pages for swapping
 void init_lru()
 {
-  page_lru_head = malloc(sizeof(struct page));
-  page_lru_head->prev = 0;
-  page_lru_head->next = 0;
-  page_lru_head->vaddr = 0;
-  page_lru_head->pgdir = 0;
+  page_lru_head = 0;
   num_lru_pages = 0;
 }
 
 void insert_lru(struct page *p)
 {
   struct page *head = page_lru_head;
-  if(num_lru_pages==0){
-    page_lru_head->next=p;
-    page_lru_head->prev=p;
-    p->prev=page_lru_head;
-    p->next=page_lru_head;
+  if (head == 0)
+  {
+    page_lru_head = p;
+    p->next = p;
+    p->prev = p;
   }
-  else{
-    p->next=head;
-    p->prev=head->prev;
-    head->prev->next=p;
-    head->prev=p;
+  else
+  {
+    struct page *tail = head->prev;
+    tail->next = p;
+    p->prev = tail;
+    p->next = head;
+    head->prev = p;
   }
   ++num_lru_pages;
 }
@@ -54,16 +52,22 @@ void update_lru(struct page *p)
   insert_page(p);
 }
 
-struct page* evict_page(){
+struct page *evict_page()
+{
   struct page *p = page_lru_head->next;
-  //search evictable page
-  //if PTE_A==0, evitable page
-  while(p!=page_lru_head){
-    pte_t*pte = walkpgdir(p->pgdir,p->vaddr,0);
-    if((*pte&PTE_A)==0){
+  struct page *updated_head;
+  // search evictable page
+  // if PTE_A==0, evitable page
+  while (1)
+  {
+    pte_t *pte = walkpgdir(p->pgdir, p->vaddr, 0);
+    if ((*pte & PTE_A) == 0)
+    {
       break;
     }
-    p= p->next;
+    updated_head = p;
+    p = p->next;
+    update_lru(updated_head);
   }
   return p;
 }
@@ -157,9 +161,12 @@ kalloc(void)
   // there is not enough physical memory, swap out user memory
   else
   {
-    struct page* page = evict_page();
-    swapwrite(page->vaddr, page->pgdir);
-    kfree((char*)P2V(PTE_ADDR(walkpgdir(page->pgdir,page->vaddr,0))));
+    
+    struct page *page = evict_page();
+    swapwrite(page->vaddr,num_free_pages);
+    pte_t *pte = walkpgdir(page->pgdir, page->vaddr, 0);
+    *pte &= ~PTE_P;
+
   }
   if (kmem.use_lock)
     release(&kmem.lock);
